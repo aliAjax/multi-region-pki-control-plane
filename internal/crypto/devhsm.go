@@ -58,7 +58,7 @@ func (d *DevHSM) Signer(ctx context.Context, ref string) (stdcrypto.Signer, erro
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 	s, ok := d.keys[ref]
-	if !ok {
+	if !ok || signerIsNil(s) {
 		return nil, errors.New("HSM key not found")
 	}
 	return s, nil
@@ -68,6 +68,7 @@ func (d *DevHSM) Available(ctx context.Context, ref string) error {
 	return err
 }
 func (d *DevHSM) Delete(ctx context.Context, ref string) error {
+	_ = ctx
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	if _, ok := d.keys[ref]; !ok {
@@ -85,6 +86,7 @@ func (d *DevHSM) Destroy() {
 	for k := range d.keys {
 		delete(d.keys, k)
 	}
+	d.keys = nil
 }
 func (d *DevHSM) Sign(ctx context.Context, tpl, parent *x509.Certificate, pub any, keyRef string) ([]byte, error) {
 	s, err := d.Signer(ctx, keyRef)
