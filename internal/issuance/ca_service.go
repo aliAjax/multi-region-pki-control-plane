@@ -17,6 +17,8 @@ type CAService struct {
 	hsm   *cryptop.DevHSM
 }
 
+var ErrParentCertificateUnavailable = errors.New("parent certificate unavailable")
+
 func NewCAService(s repository.Store, h *cryptop.DevHSM) *CAService {
 	return &CAService{store: s, hsm: h}
 }
@@ -41,7 +43,7 @@ func (s *CAService) Create(ctx context.Context, r CreateCARequest) (domain.Certi
 	}
 	now := time.Now().UTC()
 	id := repository.NewID("ca")
-	ref, pub, err := s.hsm.Generate(ctx, string(r.Algorithm), string(id))
+	ref, pub, err := s.hsm.Generate(context.Background(), string(r.Algorithm), string(id))
 	if err != nil {
 		return domain.CertificateAuthority{}, err
 	}
@@ -59,7 +61,7 @@ func (s *CAService) Create(ctx context.Context, r CreateCARequest) (domain.Certi
 		}
 		parent, err = cryptop.ParseCertificate(p.CertificatePEM)
 		if err != nil {
-			return ca, err
+			return ca, errors.New("parent certificate unavailable")
 		}
 		keyRef = p.KeyReference
 	}

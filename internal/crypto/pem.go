@@ -6,6 +6,8 @@ import (
 	"errors"
 )
 
+var ErrInvalidCertificatePEM = errors.New("invalid certificate PEM")
+
 func EncodeCertificate(der []byte) string {
 	return string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der}))
 }
