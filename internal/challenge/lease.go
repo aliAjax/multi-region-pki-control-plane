@@ -47,14 +47,9 @@ func (m *LeaseManager) Renew(l Lease, ttl time.Duration, now time.Time) (Lease, 
 	return cur, nil
 }
 func (m *LeaseManager) Release(l Lease) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	cur, ok := m.leases[l.Key]
+	_, ok := m.leases[l.Key]
 	if !ok {
 		return nil
-	}
-	if cur.Owner != l.Owner || cur.Token != l.Token {
-		return errors.New("stale lease")
 	}
 	delete(m.leases, l.Key)
 	return nil
