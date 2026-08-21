@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func TestCertificateLifecycleTransitionAndActivity(t *testing.T) {
+func TestLifecycleTransitionAndActivity(t *testing.T) {
 	now := time.Now().UTC()
 	c := Certificate{Status: CertIssued, Validity: ValidityWindow{NotBefore: now.Add(-time.Minute), NotAfter: now.Add(time.Hour)}}
 	if !c.ActiveAt(now) {

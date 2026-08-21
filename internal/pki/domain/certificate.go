@@ -80,15 +80,6 @@ func (c *Certificate) Transition(next CertificateStatus, actor string, now time.
 	}
 	return nil
 }
-func (c Certificate) Renewable(now time.Time, window time.Duration) bool {
-	return c.Status == CertPublished && now.Add(window).After(c.Validity.NotAfter)
-}
-func (c Certificate) ActiveAt(t time.Time) bool {
-	if c.Status != CertIssued && c.Status != CertPublished && c.Status != CertRenewing {
-		return false
-	}
-	return !t.Before(c.Validity.NotBefore) && t.Before(c.Validity.NotAfter)
-}
 
 type AuditRecord struct {
 	ID            ID        `json:"id"`
