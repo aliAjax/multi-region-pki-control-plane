@@ -54,7 +54,7 @@ func (s *Syncer) Sync(ctx context.Context, e Envelope) error {
 func (s *Syncer) Cursor(id string) Vector {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.vectors[id].Clone()
+	return s.vectors[id]
 }
 func (s *Syncer) Conflicts() []Conflict {
 	s.mu.Lock()

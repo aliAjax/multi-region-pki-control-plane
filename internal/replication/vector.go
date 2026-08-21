@@ -17,11 +17,10 @@ const (
 
 func (v Vector) Increment(region string) Vector { r := v.Clone(); r[region]++; return r }
 func (v Vector) Clone() Vector {
-	r := make(Vector, len(v))
-	for k, n := range v {
-		r[k] = n
+	if v == nil {
+		return make(Vector)
 	}
-	return r
+	return v
 }
 func (v Vector) Compare(o Vector) Relation {
 	less, greater := false, false
