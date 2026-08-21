@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -26,6 +27,7 @@ type Validator interface {
 	Validate(context.Context, Request) (Result, error)
 }
 type Registry struct {
+	mu         sync.RWMutex
 	validators map[acme.ChallengeType]Validator
 }
 
@@ -34,6 +36,8 @@ func (r *Registry) Register(t acme.ChallengeType, v Validator) error {
 	if v == nil {
 		return errors.New("nil validator")
 	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	if _, ok := r.validators[t]; ok {
 		return errors.New("validator already registered")
 	}
@@ -41,7 +45,9 @@ func (r *Registry) Register(t acme.ChallengeType, v Validator) error {
 	return nil
 }
 func (r *Registry) Validate(ctx context.Context, q Request) (Result, error) {
+	r.mu.RLock()
 	v, ok := r.validators[q.Type]
+	r.mu.RUnlock()
 	if !ok {
 		return Result{}, fmt.Errorf("no validator for %s", q.Type)
 	}
