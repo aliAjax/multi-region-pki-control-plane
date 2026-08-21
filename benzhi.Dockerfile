@@ -8,7 +8,9 @@ WORKDIR /app
 COPY . .
 WORKDIR /app
 RUN go build ./...
-CMD ["bash"]
+ENV PKI_LISTEN_ADDR=:18080 PKI_DEV_HSM=true
+EXPOSE 18080
+CMD ["go", "run", "./cmd/pki-api"]
 
 # 多架构交叉构建示例（请在仓库根目录执行）：
 # docker buildx build --platform linux/arm64,linux/amd64 -f benzhi.Dockerfile -t <image> .
