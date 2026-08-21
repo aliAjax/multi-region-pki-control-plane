@@ -94,7 +94,7 @@ func (s *MemoryStore) SaveCertificate(_ context.Context, c *domain.Certificate) 
 			return errors.New("idempotency key already exists")
 		}
 	}
-	s.certs[c.ID] = c.Clone()
+	s.certs[c.ID] = *c
 	return nil
 }
 func (s *MemoryStore) GetCertificate(_ context.Context, id domain.ID) (domain.Certificate, error) {
@@ -104,14 +104,14 @@ func (s *MemoryStore) GetCertificate(_ context.Context, id domain.ID) (domain.Ce
 	if !ok {
 		return c, fmt.Errorf("certificate %s: %w", id, ErrNotFound)
 	}
-	return c.Clone(), nil
+	return c, nil
 }
 func (s *MemoryStore) FindCertificateByIdempotency(_ context.Context, key string, t domain.Tenant) (domain.Certificate, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	for _, c := range s.certs {
 		if c.IdempotencyKey == key && c.Tenant.Key() == t.Key() {
-			return c.Clone(), true
+			return c, true
 		}
 	}
 	return domain.Certificate{}, false
@@ -121,7 +121,7 @@ func (s *MemoryStore) ListCertificates(_ context.Context) []domain.Certificate {
 	defer s.mu.RUnlock()
 	r := make([]domain.Certificate, 0, len(s.certs))
 	for _, c := range s.certs {
-		r = append(r, c.Clone())
+		r = append(r, c)
 	}
 	return r
 }

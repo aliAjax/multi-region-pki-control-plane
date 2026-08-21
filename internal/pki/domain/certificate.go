@@ -50,7 +50,6 @@ type Certificate struct {
 
 // Clone returns an ownership-safe snapshot for repository boundaries.
 func (c Certificate) Clone() Certificate {
-	c.DNSNames = append([]string(nil), c.DNSNames...)
 	return c
 }
 
