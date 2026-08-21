@@ -19,12 +19,18 @@ func NewBreaker(n int) *Breaker {
 	return &Breaker{threshold: n}
 }
 func (b *Breaker) Call(ctx context.Context, fn func(context.Context) error) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	now := time.Now()
 	if now.Before(b.openUntil) {
 		return errors.New("signing circuit open")
 	}
 	var err error
 	for attempt := 0; attempt < 3; attempt++ {
+		if err = ctx.Err(); err != nil {
+			return err
+		}
 		callCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
 		err = fn(callCtx)
 		cancel()
@@ -32,7 +38,14 @@ func (b *Breaker) Call(ctx context.Context, fn func(context.Context) error) erro
 			b.failures = 0
 			return nil
 		}
-		time.Sleep(time.Duration(1<<attempt) * 50 * time.Millisecond)
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return ctxErr
+		}
+		select {
+		case <-time.After(time.Duration(1<<attempt) * 50 * time.Millisecond):
+		case <-ctx.Done():
+			return ctx.Err()
+		}
 	}
 	b.failures++
 	if b.failures >= b.threshold {

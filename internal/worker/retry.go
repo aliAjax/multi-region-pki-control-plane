@@ -26,6 +26,9 @@ func (p RetryPolicy) Delay(attempt int) time.Duration {
 	return time.Duration(d)
 }
 func (p RetryPolicy) Run(ctx context.Context, fn func(context.Context) error) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if p.MaxAttempts < 1 {
 		p.MaxAttempts = 3
 	}
@@ -34,7 +37,14 @@ func (p RetryPolicy) Run(ctx context.Context, fn func(context.Context) error) er
 		if err = fn(ctx); err == nil {
 			return nil
 		}
-		time.Sleep(p.Delay(i))
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return ctxErr
+		}
+		select {
+		case <-time.After(p.Delay(i)):
+		case <-ctx.Done():
+			return ctx.Err()
+		}
 	}
 	return err
 }
