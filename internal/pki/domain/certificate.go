@@ -49,8 +49,14 @@ type Certificate struct {
 }
 
 // Clone returns an ownership-safe snapshot for repository boundaries.
+// DNSNames is copied so callers cannot mutate stored state through a shared
+// backing array, which would otherwise race with concurrent readers.
 func (c Certificate) Clone() Certificate {
-	return c
+	cp := c
+	if c.DNSNames != nil {
+		cp.DNSNames = append([]string(nil), c.DNSNames...)
+	}
+	return cp
 }
 
 func (c Certificate) ValidateNew() error {
