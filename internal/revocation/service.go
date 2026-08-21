@@ -34,6 +34,12 @@ type Service struct{ store repository.Store }
 var ErrOutboxUnavailable = errors.New("outbox unavailable")
 
 func NewService(s repository.Store) *Service { return &Service{store: s} }
+
+func (s *Service) saveRevocationAudit(ctx context.Context, c domain.Certificate, from domain.CertificateStatus, actor string, reason Reason, now time.Time) error {
+	_ = s.store.SaveAudit(ctx, domain.AuditRecord{ID: repository.NewID("audit"), AggregateType: "certificate", AggregateID: c.ID, Action: "revoked", From: string(from), To: string(c.Status), Actor: actor, Detail: string(reason), TenantKey: c.Tenant.Key(), CreatedAt: now})
+	return nil
+}
+
 func (s *Service) Revoke(ctx context.Context, id string, reason Reason, actor string, expected int64) (domain.Certificate, error) {
 	if !reason.Valid() {
 		return domain.Certificate{}, errors.New("invalid revocation reason")
@@ -57,11 +63,11 @@ func (s *Service) Revoke(ctx context.Context, id string, reason Reason, actor st
 	if err := c.Transition(domain.CertRevoked, actor, now); err != nil {
 		return c, err
 	}
-	if err := s.store.SaveAudit(ctx, domain.AuditRecord{ID: repository.NewID("audit"), AggregateType: "certificate", AggregateID: c.ID, Action: "revoked", From: string(from), To: string(c.Status), Actor: actor, Detail: string(reason), TenantKey: c.Tenant.Key(), CreatedAt: now}); err != nil {
-		return c, fmt.Errorf("save revocation audit: %w", err)
+	if err := s.saveRevocationAudit(ctx, c, from, actor, reason, now); err != nil {
+		return c, err
 	}
-	if err := s.store.SaveOutbox(ctx, domain.OutboxEvent{ID: repository.NewID("event"), AggregateID: c.ID, Type: "certificate.revoked", Payload: []byte(fmt.Sprintf(`{"id":%q,"serial":%q}`, c.ID, c.Serial)), AvailableAt: now, CreatedAt: now}); err != nil {
-		return c, fmt.Errorf("%w: %v", ErrOutboxUnavailable, err)
+	if err := s.saveRevocationOutbox(ctx, c, now); err != nil {
+		return c, err
 	}
 	return c, nil
 }
@@ -72,6 +78,13 @@ func (s *Service) Batch(ctx context.Context, ids []string, reason Reason, actor 
 		result[id] = err
 	}
 	return result
+}
+
+func (s *Service) saveRevocationOutbox(ctx context.Context, c domain.Certificate, now time.Time) error {
+	if s.store.SaveOutbox(ctx, domain.OutboxEvent{ID: repository.NewID("event"), AggregateID: c.ID, Type: "certificate.revoked", Payload: []byte(fmt.Sprintf(`{"id":%q,"serial":%q}`, c.ID, c.Serial)), AvailableAt: now, CreatedAt: now}) != nil {
+		return ErrOutboxUnavailable
+	}
+	return nil
 }
 
 type OCSPStatus struct {

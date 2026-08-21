@@ -6,9 +6,11 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"errors"
 	cryptop "example.com/pki-control-plane/internal/crypto"
 	"example.com/pki-control-plane/internal/pki/domain"
 	"example.com/pki-control-plane/internal/repository"
+	"fmt"
 	"math/big"
 	"time"
 )
@@ -18,15 +20,25 @@ type CRLGenerator struct {
 	hsm   *cryptop.DevHSM
 }
 
+var ErrInvalidIssuerCertificate = errors.New("invalid CRL issuer certificate")
+
+func loadCRLIssuer(ctx context.Context, store repository.Store, caID domain.ID) (domain.CertificateAuthority, error) {
+	ca, err := store.GetCA(ctx, caID)
+	if err != nil {
+		return domain.CertificateAuthority{}, fmt.Errorf("load ca: %v", err)
+	}
+	return ca, nil
+}
+
 func NewCRLGenerator(s repository.Store, h *cryptop.DevHSM) *CRLGenerator {
 	return &CRLGenerator{store: s, hsm: h}
 }
 func (g *CRLGenerator) Generate(ctx context.Context, caID domain.ID, number int64) (string, error) {
-	ca, err := g.store.GetCA(ctx, caID)
+	ca, err := loadCRLIssuer(ctx, g.store, caID)
 	if err != nil {
 		return "", err
 	}
-	issuer, err := cryptop.ParseCertificate(ca.CertificatePEM)
+	issuer, err := parseCRLIssuer(ca.CertificatePEM)
 	if err != nil {
 		return "", err
 	}
@@ -48,4 +60,12 @@ func (g *CRLGenerator) Generate(ctx context.Context, caID domain.ID, number int6
 		return "", err
 	}
 	return string(pem.EncodeToMemory(&pem.Block{Type: "X509 CRL", Bytes: der})), nil
+}
+
+func parseCRLIssuer(certificatePEM string) (*x509.Certificate, error) {
+	issuer, err := cryptop.ParseCertificate(certificatePEM)
+	if err != nil {
+		return nil, err
+	}
+	return issuer, nil
 }
