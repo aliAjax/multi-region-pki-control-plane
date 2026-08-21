@@ -94,10 +94,12 @@ func (s *Service) Issue(ctx context.Context, id, actor string) (domain.Certifica
 	tpl := &x509.Certificate{SerialNumber: serial, Subject: pkix.Name{CommonName: strings.Join(c.DNSNames, ",")}, DNSNames: c.DNSNames, NotBefore: c.Validity.NotBefore, NotAfter: c.Validity.NotAfter, KeyUsage: x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment, ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth}}
 	parent, err := cryptop.ParseCertificate(ca.CertificatePEM)
 	if err != nil {
-		return c, errors.New("ca certificate unavailable")
+		s.rollback(ctx, &c, actor)
+		return c, fmt.Errorf("ca certificate unavailable: %w", err)
 	}
 	der, err := s.signer.Sign(ctx, tpl, parent, pub, ca.KeyReference)
 	if err != nil {
+		s.rollback(ctx, &c, actor)
 		return c, err
 	}
 	c.Serial = serial.Text(16)
@@ -109,6 +111,15 @@ func (s *Service) Issue(ctx context.Context, id, actor string) (domain.Certifica
 		return c, err
 	}
 	return c, nil
+}
+
+// rollback reverts a certificate stuck in CertIssuing back to a retryable
+// state. The transition graph only allows CertIssuing -> CertFailed and
+// CertFailed -> CertApproved, so both steps are required to land on a state
+// from which Issue can be retried.
+func (s *Service) rollback(_ context.Context, c *domain.Certificate, actor string) {
+	_ = c.Transition(domain.CertFailed, actor, time.Now().UTC())
+	_ = c.Transition(domain.CertApproved, actor, time.Now().UTC())
 }
 func PublicKeyFingerprint(pub stdcrypto.PublicKey) string {
 	b, _ := x509.MarshalPKIXPublicKey(pub)

@@ -8,6 +8,7 @@ import (
 	cryptop "example.com/pki-control-plane/internal/crypto"
 	"example.com/pki-control-plane/internal/pki/domain"
 	"example.com/pki-control-plane/internal/repository"
+	"fmt"
 	"math/big"
 	"time"
 )
@@ -43,7 +44,7 @@ func (s *CAService) Create(ctx context.Context, r CreateCARequest) (domain.Certi
 	}
 	now := time.Now().UTC()
 	id := repository.NewID("ca")
-	ref, pub, err := s.hsm.Generate(context.Background(), string(r.Algorithm), string(id))
+	ref, pub, err := s.hsm.Generate(ctx, string(r.Algorithm), string(id))
 	if err != nil {
 		return domain.CertificateAuthority{}, err
 	}
@@ -61,7 +62,7 @@ func (s *CAService) Create(ctx context.Context, r CreateCARequest) (domain.Certi
 		}
 		parent, err = cryptop.ParseCertificate(p.CertificatePEM)
 		if err != nil {
-			return ca, errors.New("parent certificate unavailable")
+			return ca, fmt.Errorf("%w: %v", ErrParentCertificateUnavailable, err)
 		}
 		keyRef = p.KeyReference
 	}

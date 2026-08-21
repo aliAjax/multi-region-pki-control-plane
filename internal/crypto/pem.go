@@ -4,6 +4,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
+	"fmt"
 )
 
 var ErrInvalidCertificatePEM = errors.New("invalid certificate PEM")
@@ -14,9 +15,13 @@ func EncodeCertificate(der []byte) string {
 func ParseCertificate(s string) (*x509.Certificate, error) {
 	b, _ := pem.Decode([]byte(s))
 	if b == nil || b.Type != "CERTIFICATE" {
-		return nil, errors.New("invalid certificate PEM")
+		return nil, fmt.Errorf("%w", ErrInvalidCertificatePEM)
 	}
-	return x509.ParseCertificate(b.Bytes)
+	c, err := x509.ParseCertificate(b.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrInvalidCertificatePEM, err)
+	}
+	return c, nil
 }
 func ParseCSR(s string) (*x509.CertificateRequest, error) {
 	b, _ := pem.Decode([]byte(s))

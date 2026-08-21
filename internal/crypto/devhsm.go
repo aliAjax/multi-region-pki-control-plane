@@ -22,13 +22,13 @@ func NewSignerFactory(enabled bool) *DevHSM {
 	return &DevHSM{keys: make(map[string]stdcrypto.Signer), enabled: enabled}
 }
 func (d *DevHSM) Generate(ctx context.Context, algorithm, label string) (string, stdcrypto.PublicKey, error) {
-	if !d.enabled {
-		return "", nil, errors.New("development HSM disabled; configure production HSM/KMS")
-	}
 	select {
 	case <-ctx.Done():
 		return "", nil, ctx.Err()
 	default:
+	}
+	if !d.enabled {
+		return "", nil, errors.New("development HSM disabled; configure production HSM/KMS")
 	}
 	if algorithm != "ECDSA-P256" {
 		return "", nil, fmt.Errorf("dev HSM supports only ECDSA-P256, got %s", algorithm)
