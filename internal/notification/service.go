@@ -72,13 +72,18 @@ func (d *Dispatcher) Submit(ctx context.Context, m Message) (string, error) {
 		return m.ID, nil
 	}
 	p := d.providers[m.Channel]
-	d.seen[m.Tenant+":"+m.IdempotencyKey] = time.Now()
 	d.mu.Unlock()
 	if p == nil {
 		return "", fmt.Errorf("no provider for %s", m.Channel)
 	}
 	external, err := p.Send(ctx, m)
-	return external, err
+	if err != nil {
+		return external, err
+	}
+	d.mu.Lock()
+	d.seen[m.Tenant+":"+m.IdempotencyKey] = time.Now()
+	d.mu.Unlock()
+	return external, nil
 }
 
 type Receipt struct {

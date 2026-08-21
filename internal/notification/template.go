@@ -2,6 +2,7 @@ package notification
 
 import (
 	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 )
@@ -19,7 +20,11 @@ func Render(template string, vars map[string]string) (string, error) {
 		return ""
 	})
 	if len(missing) > 0 {
-		return out, nil
+		ks := make([]string, 0, len(missing))
+		for k := range missing {
+			ks = append(ks, k)
+		}
+		return out, fmt.Errorf("missing template variables: %s", strings.Join(ks, ", "))
 	}
 	return out, nil
 }
