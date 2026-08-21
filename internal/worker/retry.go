@@ -34,13 +34,7 @@ func (p RetryPolicy) Run(ctx context.Context, fn func(context.Context) error) er
 		if err = fn(ctx); err == nil {
 			return nil
 		}
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-time.After(p.Delay(i)):
-			{
-			}
-		}
+		time.Sleep(p.Delay(i))
 	}
 	return err
 }

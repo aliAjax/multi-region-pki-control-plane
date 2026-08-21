@@ -32,11 +32,7 @@ func (b *Breaker) Call(ctx context.Context, fn func(context.Context) error) erro
 			b.failures = 0
 			return nil
 		}
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-time.After(time.Duration(1<<attempt) * 50 * time.Millisecond):
-		}
+		time.Sleep(time.Duration(1<<attempt) * 50 * time.Millisecond)
 	}
 	b.failures++
 	if b.failures >= b.threshold {
