@@ -71,13 +71,17 @@ func (d *DevHSM) Delete(ctx context.Context, ref string) error {
 	_ = ctx
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	if _, ok := d.keys[ref]; !ok {
+	s, ok := d.keys[ref]
+	if !ok || signerIsNil(s) {
 		return errors.New("key not found")
 	}
 	delete(d.keys, ref)
 	return nil
 }
 func (d *DevHSM) Capabilities(context.Context) (Capabilities, error) {
+	if !d.enabled {
+		return Capabilities{}, errors.New("development HSM disabled")
+	}
 	return Capabilities{Algorithms: []string{"ECDSA-P256"}, HardwareBacked: false, Attestation: false}, nil
 }
 func (d *DevHSM) Destroy() {
@@ -86,7 +90,7 @@ func (d *DevHSM) Destroy() {
 	for k := range d.keys {
 		delete(d.keys, k)
 	}
-	d.keys = nil
+	d.keys = make(map[string]stdcrypto.Signer)
 }
 func (d *DevHSM) Sign(ctx context.Context, tpl, parent *x509.Certificate, pub any, keyRef string) ([]byte, error) {
 	s, err := d.Signer(ctx, keyRef)

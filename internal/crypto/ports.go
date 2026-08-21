@@ -4,11 +4,19 @@ import (
 	"context"
 	stdcrypto "crypto"
 	"crypto/x509"
+	"reflect"
 )
 
 func signerIsNil(s stdcrypto.Signer) bool {
 	if s == nil {
 		return true
+	}
+	v := reflect.ValueOf(s)
+	switch v.Kind() {
+	case reflect.Invalid:
+		return true
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice:
+		return v.IsNil()
 	}
 	return false
 }
