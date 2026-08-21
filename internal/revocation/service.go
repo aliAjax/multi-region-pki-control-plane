@@ -86,14 +86,14 @@ type OCSPStatus struct {
 func (s *Service) Check(ctx context.Context, serial string) (OCSPStatus, error) {
 	for _, c := range s.store.ListCertificates(ctx) {
 		if c.Serial == serial {
+			now := time.Now().UTC()
 			status := "good"
 			if c.Status == domain.CertRevoked {
 				status = "revoked"
-			}
-			if c.Status == domain.CertExpired {
+			} else if c.Status == domain.CertExpired || !c.ActiveAt(now) {
 				status = "expired"
 			}
-			return OCSPStatus{Serial: serial, Status: status, RevokedAt: c.RevokedAt, Reason: c.RevocationReason, ProducedAt: time.Now().UTC(), NextUpdate: time.Now().UTC().Add(time.Hour)}, nil
+			return OCSPStatus{Serial: serial, Status: status, RevokedAt: c.RevokedAt, Reason: c.RevocationReason, ProducedAt: now, NextUpdate: now.Add(time.Hour)}, nil
 		}
 	}
 	return OCSPStatus{Serial: serial, Status: "unknown", ProducedAt: time.Now().UTC()}, nil
