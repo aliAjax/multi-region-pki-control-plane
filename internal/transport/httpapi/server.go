@@ -2,7 +2,6 @@ package httpapi
 
 import (
 	"encoding/json"
-	"errors"
 	"example.com/pki-control-plane/internal/config"
 	cryptop "example.com/pki-control-plane/internal/crypto"
 	"example.com/pki-control-plane/internal/issuance"
@@ -166,10 +165,6 @@ func (s *Server) certificateAction(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewDecoder(r.Body).Decode(&req)
 		c, err := s.revoker.Revoke(r.Context(), id, req.Reason, "api", 0)
 		if err != nil {
-			if errors.Is(err, repository.ErrNotFound) {
-				writeError(w, http.StatusNotFound, "not_found", err.Error())
-				return
-			}
 			writeError(w, 400, "invalid_request", err.Error())
 			return
 		}

@@ -19,6 +19,8 @@ type PublicError struct {
 }
 
 func (e *PublicError) Error() string           { return string(e.Code) + ": " + e.Message }
-func (e *PublicError) Unwrap() error           { return e.Cause }
+func (e *PublicError) Unwrap() error           { return nil }
 func E(c Code, m string, cause error) error    { return &PublicError{Code: c, Message: m, Cause: cause} }
-func Wrap(c Code, m string, cause error) error { return E(c, fmt.Sprintf("%s: %v", m, cause), cause) }
+func Wrap(c Code, m string, cause error) error { return E(c, fmt.Sprintf("%s: %v", m, cause), nil) }
+
+func CodeOf(error) Code { return Internal }
