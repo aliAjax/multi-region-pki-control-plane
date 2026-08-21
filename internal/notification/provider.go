@@ -13,13 +13,7 @@ type MockProvider struct {
 
 func (p MockProvider) Send(ctx context.Context, m Message) (string, error) {
 	if p.Delay > 0 {
-		t := time.NewTimer(p.Delay)
-		defer t.Stop()
-		select {
-		case <-ctx.Done():
-			return "", ctx.Err()
-		case <-t.C:
-		}
+		time.Sleep(p.Delay)
 	}
 	if p.Fail {
 		return "", errors.New("mock provider failure")

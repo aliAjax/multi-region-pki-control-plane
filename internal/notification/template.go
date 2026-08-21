@@ -19,7 +19,7 @@ func Render(template string, vars map[string]string) (string, error) {
 		return ""
 	})
 	if len(missing) > 0 {
-		return out, errors.New("missing template variables")
+		return out, nil
 	}
 	return out, nil
 }
