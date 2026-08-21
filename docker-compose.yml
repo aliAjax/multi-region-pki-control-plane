@@ -1,0 +1,5 @@
+services:
+  pki-api:
+    build: .
+    ports: ["8080:8080"]
+    environment: ["PKI_DEV_HSM=true", "PKI_REGION=local"]

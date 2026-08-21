@@ -1,0 +1,5 @@
+listen_addr: ":8080"
+region: "local"
+development_hsm: false
+database_url: "${PKI_DATABASE_URL}"
+audit_key: "${PKI_AUDIT_KEY}"

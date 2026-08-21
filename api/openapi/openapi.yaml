@@ -1,0 +1,9 @@
+openapi: 3.1.0
+info: {title: PKI Control Plane, version: 1.0.0}
+paths:
+  /healthz: {get: {responses: {"200": {description: healthy}}}}
+  /readyz: {get: {responses: {"200": {description: ready}}}}
+  /api/v1/ca: {get: {responses: {"200": {description: list}}}, post: {responses: {"201": {description: created}}}}
+  /api/v1/certificates: {get: {responses: {"200": {description: list}}}, post: {parameters: [{in: header, name: Idempotency-Key, required: true, schema: {type: string}}], responses: {"201": {description: requested}}}}
+  /api/v1/certificates/{id}/revoke: {post: {responses: {"200": {description: revoked}}}}
+  /api/v1/ocsp/{serial}: {get: {responses: {"200": {description: status}}}}

@@ -1,0 +1,14 @@
+syntax = "proto3";
+package pki.v1;
+service Issuer { rpc Sign(SignRequest) returns (SignResponse); }
+service Revocation { rpc Check(CheckRequest) returns (CheckResponse); }
+service Replication { rpc Sync(SyncRequest) returns (SyncResponse); }
+service Challenge { rpc Validate(ValidateRequest) returns (ValidateResponse); }
+message SignRequest { string certificate_id = 1; string csr_pem = 2; }
+message SignResponse { string certificate_pem = 1; string serial = 2; }
+message CheckRequest { string serial = 1; }
+message CheckResponse { string status = 1; }
+message SyncRequest { string aggregate_id = 1; bytes payload = 2; }
+message SyncResponse { bool applied = 1; }
+message ValidateRequest { string challenge_id = 1; }
+message ValidateResponse { bool valid = 1; }

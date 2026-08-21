@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: pki-api}
+spec:
+  replicas: 2
+  selector: {matchLabels: {app: pki-api}}
+  template:
+    metadata: {labels: {app: pki-api}}
+    spec:
+      containers:
+        - name: api
+          image: pki-control-plane:dev
+          ports: [{containerPort: 8080}]
+          env: [{name: PKI_DEV_HSM, value: "false"}]
+          readinessProbe: {httpGet: {path: /readyz, port: 8080}}
+          livenessProbe: {httpGet: {path: /healthz, port: 8080}}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: pki-api}
+spec: {selector: {app: pki-api}, ports: [{port: 80, targetPort: 8080}]}

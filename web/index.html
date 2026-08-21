@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PKI Control Plane</title>
+  <style>
+    :root { color-scheme: light; font-family: Inter, system-ui, sans-serif; }
+    body { margin: 0; background: #f3f6f8; color: #17212b; }
+    header { background: #113b4a; color: #fff; padding: 24px 7vw; }
+    main { max-width: 1100px; margin: 32px auto; padding: 0 24px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+    .panel { background: #fff; border: 1px solid #d6e0e5; border-radius: 6px; padding: 18px; }
+    .metric { font-size: 28px; font-weight: 700; margin-top: 8px; }
+    .ok { color: #18794e; }
+    button { border: 0; border-radius: 4px; padding: 10px 14px; background: #d16b2f; color: #fff; cursor: pointer; }
+    pre { white-space: pre-wrap; font-size: 12px; background: #eef3f5; padding: 12px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <header><strong>Multi-region PKI control plane</strong><div>Certificate authority operations</div></header>
+  <main>
+    <div class="grid">
+      <section class="panel"><div>API status</div><div id="status" class="metric">Checking...</div></section>
+      <section class="panel"><div>Region</div><div id="region" class="metric">-</div></section>
+      <section class="panel"><div>Certificates</div><div id="certificates" class="metric">-</div></section>
+    </div>
+    <section class="panel" style="margin-top:16px"><button id="refresh">Refresh control-plane state</button><pre id="details">Waiting for API response...</pre></section>
+  </main>
+  <script>
+    async function refresh() {
+      const [health, certificates] = await Promise.all([fetch('/healthz'), fetch('/api/v1/certificates')]);
+      const healthBody = await health.json();
+      const certBody = await certificates.json();
+      document.querySelector('#status').textContent = healthBody.status;
+      document.querySelector('#status').className = 'metric ok';
+      document.querySelector('#region').textContent = healthBody.region;
+      document.querySelector('#certificates').textContent = (certBody.items || []).length;
+      document.querySelector('#details').textContent = JSON.stringify({ health: healthBody, certificates: certBody }, null, 2);
+    }
+    document.querySelector('#refresh').addEventListener('click', refresh);
+    refresh().catch((err) => { document.querySelector('#details').textContent = err.message; });
+  </script>
+</body>
+</html>
